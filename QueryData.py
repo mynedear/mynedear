@@ -4,11 +4,20 @@ import requests
 
 url = "http://localhost:9200/zeebe-record_process-instance*/_search"
 data = {
-    "size": 10000
+    "size": 10000,
+    "query": {
+        "bool": {
+        "filter":[
+            {"terms": {"intent": ["ELEMENT_ACTIVATED","ELEMENT_COMPLETED"]}},
+            {"match": {"value.processInstanceKey": 2251799813718878}}  
+        ]
+        }
+    }
 }
 
 response = requests.post(url, json=data)
 response_json = response.json()
+# print(response_json)
 # formatted_json = json.dumps(response_json, indent=4)
 
 # print(formatted_json)
@@ -24,7 +33,7 @@ timestamp_List = []
 
 for body in response_json['hits']['hits']:
     
-    if body['_source']['value']['processInstanceKey'] == 2251799813708934:
+    # if body['_source']['value']['processInstanceKey'] == 2251799813708934:
         # print(body)
         # print(json.dumps(body, indent=4))
         elementId = body['_source']['value']['elementId']
