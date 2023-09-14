@@ -39,5 +39,9 @@ for body in response_json['hits']['hits']:
         # print(body)
         # print(json.dumps(body, indent=4))
         element_id = body['_source']['value']['elementId']
+        intent = body['_source']['intent']
+        bpmnElementType = body['_source']['value']['bpmnElementType']
         print(f'elementId: {element_id}')
+        print(f'intent: {intent}')
+        print(f'bpmnElementType: {bpmnElementType}')
 
