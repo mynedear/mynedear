@@ -7,10 +7,10 @@ data = {
     "size": 10000,
     "query": {
         "bool": {
-        "filter":[
-            {"terms": {"intent": ["ELEMENT_ACTIVATED","ELEMENT_COMPLETED"]}},
-            {"match": {"value.processInstanceKey": 2251799813718878}}  
-        ]
+            "filter":[
+                {"terms": {"intent": ["ELEMENT_ACTIVATED","ELEMENT_COMPLETED"]}},
+                {"match": {"value.processInstanceKey": 2251799813721617}}  
+            ]
         }
     }
 }
@@ -19,44 +19,33 @@ response = requests.post(url, json=data)
 response_json = response.json()
 # print(response_json)
 # formatted_json = json.dumps(response_json, indent=4)
-
 # print(formatted_json)
-
-# for body in response_json['hits']['hits']:
-#     if body['_source']['value']['processInstanceKey'] == 2251799813708934:
-#         print(body)
 
 elementId_List = []
 intent_List = []
 bpmnElementType_List = []
 timestamp_List = []
+element_dict = {}
 
 for body in response_json['hits']['hits']:
     
-    # if body['_source']['value']['processInstanceKey'] == 2251799813708934:
-        # print(body)
-        # print(json.dumps(body, indent=4))
-        elementId = body['_source']['value']['elementId']
-        intent = body['_source']['intent']
-        bpmnElementType = body['_source']['value']['bpmnElementType']
-        timestamp = body['_source']['timestamp']
-        # print(f'elementId: {elementId}')
-        # print(f'intent: {intent}')
-        # print(f'bpmnElementType: {bpmnElementType}')
+    elementId = body['_source']['value']['elementId']
+    intent = body['_source']['intent']
+    bpmnElementType = body['_source']['value']['bpmnElementType']
+    timestamp = body['_source']['timestamp']
 
-        elementId_List.append(elementId)
-        intent_List.append(intent)
-        bpmnElementType_List.append(bpmnElementType)
-        timestamp_List.append(timestamp)
-
-data = {
-    'elementId' : elementId_List,
-    'intent' : intent_List,
-    'bpmnElementType' : bpmnElementType_List,
-    'timestamp' : timestamp_List
-}
-
-df = pd.DataFrame(data)
-
+    if intent == 'ELEMENT_ACTIVATED':
+        element_dict[elementId] = {
+            'elementId': elementId,
+            'intent': intent,
+            'bpmnElementType': bpmnElementType,
+            'timestamp': timestamp
+        }
+    elif intent == 'ELEMENT_COMPLETED' and elementId in element_dict:
+        element_dict[elementId]['intent'] = intent
+        element_dict[elementId]['bpmnElementType'] = bpmnElementType
+        element_dict[elementId]['timestamp'] = timestamp
+    
+result_list = list(element_dict.values())
+df = pd.DataFrame(result_list)
 print(df)
-
