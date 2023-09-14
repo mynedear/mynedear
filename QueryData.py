@@ -1,21 +1,6 @@
-# import pandas as pd
-# import requests
-
-# url = "http://localhost:9200/zeebe-record_process-instance*/_search"
-# data = {
-#     "size":10000
-#     }
-
-# response = requests.post(url , json=data)
-# print(response.json())
-
-# for body in response.json()['hits']['hits']:
-#     if body['_source']['value']['processInstanceKey'] == 2251799813708934:
-#         print(body)
-
 import pandas as pd
 import requests
-import json  # เพิ่มโมดูล json เพื่อใช้ในการจัดรูปแบบ JSON
+# import json
 
 url = "http://localhost:9200/zeebe-record_process-instance*/_search"
 data = {
@@ -23,10 +8,8 @@ data = {
 }
 
 response = requests.post(url, json=data)
-response_json = response.json()  # บันทึก JSON ไว้ในตัวแปร
-
-# ใช้ json.dumps() เพื่อจัดรูปแบบ JSON ให้อ่านง่าย
-formatted_json = json.dumps(response_json, indent=4)
+response_json = response.json()
+# formatted_json = json.dumps(response_json, indent=4)
 
 # print(formatted_json)
 
@@ -34,14 +17,37 @@ formatted_json = json.dumps(response_json, indent=4)
 #     if body['_source']['value']['processInstanceKey'] == 2251799813708934:
 #         print(body)
 
+elementId_List = []
+intent_List = []
+bpmnElementType_List = []
+timestamp_List = []
+
 for body in response_json['hits']['hits']:
+    
     if body['_source']['value']['processInstanceKey'] == 2251799813708934:
         # print(body)
         # print(json.dumps(body, indent=4))
-        element_id = body['_source']['value']['elementId']
+        elementId = body['_source']['value']['elementId']
         intent = body['_source']['intent']
         bpmnElementType = body['_source']['value']['bpmnElementType']
-        print(f'elementId: {element_id}')
-        print(f'intent: {intent}')
-        print(f'bpmnElementType: {bpmnElementType}')
+        timestamp = body['_source']['timestamp']
+        # print(f'elementId: {elementId}')
+        # print(f'intent: {intent}')
+        # print(f'bpmnElementType: {bpmnElementType}')
+
+        elementId_List.append(elementId)
+        intent_List.append(intent)
+        bpmnElementType_List.append(bpmnElementType)
+        timestamp_List.append(timestamp)
+
+data = {
+    'elementId' : elementId_List,
+    'intent' : intent_List,
+    'bpmnElementType' : bpmnElementType_List,
+    'timestamp' : timestamp_List
+}
+
+df = pd.DataFrame(data)
+
+print(df)
 
