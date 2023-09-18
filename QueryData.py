@@ -38,10 +38,10 @@ def Instance_History(Process_Instance_Key):
     response_incident = requests.post(url_incident, json=data_incident)
     response_incident_json = response_incident.json()
 
-    elementId_List = []
-    intent_List = []
-    bpmnElementType_List = []
-    sequence_List = []
+    # elementId_List = []
+    # intent_List = []
+    # bpmnElementType_List = []
+    # sequence_List = []
     element_dict = {}
     element_incident_dict = {}
 
@@ -78,7 +78,7 @@ def Instance_History(Process_Instance_Key):
         
         
     result_list = list(element_dict.values())
-    df = pd.DataFrame(result_list)
+    # df = pd.DataFrame(result_list)
 
     for body_incident in response_incident_json['hits']['hits']:
         
@@ -94,18 +94,25 @@ def Instance_History(Process_Instance_Key):
                 'sequence': sequence
             }
     result_incident_list = list(element_incident_dict.values())
-    df_incident = pd.DataFrame(result_incident_list)
+    # df_incident = pd.DataFrame(result_incident_list)
 
 
-    if 'elementId' in df_incident.columns:
-        print("The 'elementId' column exists in df_incident.")
-        df.loc[df['elementId'].isin(df_incident['elementId']), 'intent'] = 'Fail'
+    # if 'elementId' in df_incident.columns:
+    #     print("The 'elementId' column exists in df_incident.")
+    #     df.loc[df['elementId'].isin(df_incident['elementId']), 'intent'] = 'Fail'
         
-    else:
-        print("The 'elementId' column does not exist in df_incident.")
+    # else:
+    #     print("The 'elementId' column does not exist in df_incident.")
 
-    return df
+    # return df
+
+    for element in result_list:
+        elementId = element['elementId']
+        if any(item['elementId'] == elementId for item in result_incident_list):
+            element['intent'] = 'Fail'
+
+    return result_list
 
 
-x = Instance_History(Process_Instance_Key=2251799813698800) 
+x = Instance_History(Process_Instance_Key=2251799813694049) 
 print(x)
