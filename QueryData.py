@@ -1,5 +1,22 @@
 import pandas as pd
 import requests
+
+import datetime
+import pytz
+def convert_time(timestamp):
+
+    timestamp_milliseconds = timestamp
+    timestamp_seconds = timestamp_milliseconds / 1000
+
+    utc_time = datetime.datetime.utcfromtimestamp(timestamp_seconds)
+    thailand_timezone = pytz.timezone('Asia/Bangkok')
+    thailand_time = utc_time.replace(tzinfo=pytz.utc).astimezone(thailand_timezone)
+    human_readable_time = thailand_time.strftime('%Y-%m-%d %H:%M:%S %Z')
+
+    return human_readable_time
+
+
+
 def Instance_History(Process_Instance_Key):
 
     url = "http://localhost:9200/zeebe-record_process-instance*/_search"
@@ -15,7 +32,7 @@ def Instance_History(Process_Instance_Key):
         "query": {
             "bool": {
                 "filter":[
-                    {"terms": {"intent": ["ELEMENT_ACTIVATED","ELEMENT_COMPLETED","ELEMENT_TERMINATED"]}},
+                    {"terms": {"intent": ["ELEMENT_ACTIVATED","ELEMENT_COMPLETED","ELEMENT_TERMINATED","ELEMENT_ACTIVATING"]}},
                     {"match": {"value.processInstanceKey": 	Process_Instance_Key}}  
                 ]
             }
@@ -38,10 +55,6 @@ def Instance_History(Process_Instance_Key):
     response_incident = requests.post(url_incident, json=data_incident)
     response_incident_json = response_incident.json()
 
-    # elementId_List = []
-    # intent_List = []
-    # bpmnElementType_List = []
-    # sequence_List = []
     element_dict = {}
     element_incident_dict = {}
 
@@ -49,36 +62,56 @@ def Instance_History(Process_Instance_Key):
         
         elementId = body['_source']['value']['elementId']
         intent = body['_source']['intent']
+        if intent == 'ELEMENT_TERMINATED':
+            intent = 'CANCELED'
+        elif intent == 'ELEMENT_ACTIVATED':
+            intent = 'Active'
+        elif intent == 'ELEMENT_COMPLETED':
+            intent = 'COMPLETED'
+        elif intent == 'ELEMENT_ACTIVATING':
+            intent = 'Activating'
         bpmnElementType = body['_source']['value']['bpmnElementType']
         sequence = body['_source']['sequence']
-
-        if intent == 'ELEMENT_ACTIVATED':
+        end_date = convert_time(body['_source']['timestamp'])
+        
+        if intent == 'Active':
             element_dict[elementId] = {
                 'elementId': elementId,
                 'intent': intent,
                 'bpmnElementType': bpmnElementType,
-                'sequence': sequence
+                'sequence': sequence,
+                'endDate' : end_date,
             }
-        elif intent == 'ELEMENT_COMPLETED':
+        elif intent == 'COMPLETED':
 
             element_dict[elementId] = {
                 'elementId': elementId,
                 'intent': intent,
                 'bpmnElementType': bpmnElementType,
-                'sequence': sequence
+                'sequence': sequence,
+                'endDate' : end_date,
             }
-        elif intent == 'ELEMENT_TERMINATED':
+        elif intent == 'CANCELED':
 
             element_dict[elementId] = {
                 'elementId': elementId,
                 'intent': intent,
                 'bpmnElementType': bpmnElementType,
-                'sequence': sequence
+                'sequence': sequence,
+                'endDate' : end_date,
+            }
+        elif intent == 'Activating':
+
+            element_dict[elementId] = {
+                'elementId': elementId,
+                'intent': intent,
+                'bpmnElementType': bpmnElementType,
+                'sequence': sequence,
+                'endDate' : end_date,
             }
         
         
     result_list = list(element_dict.values())
-    # df = pd.DataFrame(result_list)
 
     for body_incident in response_incident_json['hits']['hits']:
         
@@ -87,6 +120,7 @@ def Instance_History(Process_Instance_Key):
         bpmnProcessId = body_incident['_source']['value']['bpmnProcessId']
         sequence = body_incident['_source']['sequence']
 
+
         element_incident_dict[elementId] = {
                 'elementId': elementId,
                 'intent': intent,
@@ -94,25 +128,39 @@ def Instance_History(Process_Instance_Key):
                 'sequence': sequence
             }
     result_incident_list = list(element_incident_dict.values())
-    # df_incident = pd.DataFrame(result_incident_list)
 
-
-    # if 'elementId' in df_incident.columns:
-    #     print("The 'elementId' column exists in df_incident.")
-    #     df.loc[df['elementId'].isin(df_incident['elementId']), 'intent'] = 'Fail'
-        
-    # else:
-    #     print("The 'elementId' column does not exist in df_incident.")
-
-    # return df
 
     for element in result_list:
         elementId = element['elementId']
         if any(item['elementId'] == elementId for item in result_incident_list):
-            element['intent'] = 'Fail'
+            element['intent'] = 'FAILED'
 
     return result_list
 
 
-x = Instance_History(Process_Instance_Key=2251799813694049) 
-print(x)
+history = Instance_History(Process_Instance_Key=2251799813698810) 
+print(history)
+
+import json
+pretty_formatted_data = json.dumps(history, indent=4)
+
+print(pretty_formatted_data)
+
+# from fastapi import FastAPI
+# import uvicorn
+# app = FastAPI()
+# from pydantic import BaseModel
+# class InstanceHistory_class(BaseModel):
+
+#     Processinstance: int
+#     test: str
+
+# @app.post("/InstanceHistory")
+# async def root(payload:InstanceHistory_class):
+#     history = Instance_History(Process_Instance_Key=payload.Processinstance)
+#     print(payload.test)
+#     return history
+# if __name__ == "__main__":
+
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
+
