@@ -60,8 +60,11 @@ def Instance_History(Process_Instance_Key):
 
     for body in response_json['hits']['hits']:
         
+        
         elementId = body['_source']['value']['elementId']
         intent = body['_source']['intent']
+        # print(elementId+' : '+intent)
+
         if intent == 'ELEMENT_TERMINATED':
             intent = 'CANCELED'
         elif intent == 'ELEMENT_ACTIVATED':
@@ -132,14 +135,20 @@ def Instance_History(Process_Instance_Key):
 
     for element in result_list:
         elementId = element['elementId']
-        if any(item['elementId'] == elementId for item in result_incident_list):
-            element['intent'] = 'FAILED'
+        # if any(item['elementId'] == elementId for item in result_incident_list):
+        #     element['intent'] = 'FAILED'
+        for item in result_incident_list:
+            if item['elementId'] == elementId:
+                # if element[elementId] == elementId:
+                if element['intent'] == 'CREATED' and item['intent'] != 'RESOLVED':
+                    element['intent'] = 'FAILED'
+
 
     return result_list
 
 
-history = Instance_History(Process_Instance_Key=2251799813698810) 
-print(history)
+history = Instance_History(Process_Instance_Key=2251799813698910) 
+# print(history)
 
 import json
 pretty_formatted_data = json.dumps(history, indent=4)
